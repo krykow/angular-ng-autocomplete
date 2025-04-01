@@ -12,26 +12,13 @@
     </div>
 
     <div class="ng-autocomplete">
-      <ng-autocomplete #ngAutoCompleteStatic
-                       [data]="countries"
-                       [searchKeyword]="keyword"
-                       [initialValue]="initialValue"
-                       [focusFirst]="true"
-                       [placeholder]="placeholder"
-                       (selected)='selectEvent($event)'
-                       (inputChanged)='changeEventStatic($event)'
-                       (inputFocused)='focusEventStatic($event)'
-                       (inputCleared)='clearEventStatic()'
-                       (scrolledToEnd)='scrollToEndStatic()'
-                       (opened)="openedStatic()"
-                       (closed)="closedStatic()"
-                       historyIdentifier="countryList"
-                       [historyHeading]="historyHeading"
-                       historyListMaxNumber="15"
-                       notFoundText="Not found"
-                       minQueryLength="1"
-                       [itemTemplate]="itemTemplateStatic"
-                       [notFoundTemplate]="notFoundTemplate">
+      <ng-autocomplete #ngAutoCompleteStatic [data]="countries" [searchKeyword]="keyword" [initialValue]="initialValue"
+        [focusFirst]="true" [placeholder]="placeholder" (selected)='selectEvent($event)'
+        (inputChanged)='changeEventStatic($event)' (inputFocused)='focusEventStatic($event)'
+        (inputCleared)='clearEventStatic()' (scrolledToEnd)='scrollToEndStatic()' (opened)="openedStatic()"
+        (closed)="closedStatic()" historyIdentifier="countryList" [historyHeading]="historyHeading"
+        historyListMaxNumber="15" notFoundText="Not found" minQueryLength="1" [itemTemplate]="itemTemplateStatic"
+        [notFoundTemplate]="notFoundTemplate" selectOnTab="true">
       </ng-autocomplete>
 
       <ng-template #itemTemplateStatic let-item>
@@ -53,25 +40,12 @@
     </div>
 
     <div class="ng-autocomplete">
-      <ng-autocomplete #ngAutoCompleteApi
-                       [data]="items"
-                       [searchKeyword]="keyword"
-                       [placeholder]="placeholder"
-                       (selected)='selectEvent($event)'
-                       (inputChanged)='onChangeSearch($event)'
-                       (inputFocused)='focusedEventApi($event)'
-                       (inputCleared)='clearEventApi()'
-                       (scrolledToEnd)='scrollToEndApi()'
-                       (opened)="openedEventApi()"
-                       (closed)="closedEventApi()"
-                       historyIdentifier="reposList"
-                       [historyHeading]="historyHeading"
-                       historyListMaxNumber="5"
-                       notFoundText="Not found"
-                       [isLoading]="isLoading"
-                       debounceTime="700"
-                       [itemTemplate]="itemTemplateApi"
-                       [notFoundTemplate]="notFoundTemplate">
+      <ng-autocomplete #ngAutoCompleteApi [data]="items" [searchKeyword]="keyword" [placeholder]="placeholder"
+        (selected)='selectEvent($event)' (inputChanged)='onChangeSearch($event)'
+        (inputFocused)='focusedEventApi($event)' (inputCleared)='clearEventApi()' (scrolledToEnd)='scrollToEndApi()'
+        (opened)="openedEventApi()" (closed)="closedEventApi()" historyIdentifier="reposList"
+        [historyHeading]="historyHeading" historyListMaxNumber="5" notFoundText="Not found" [isLoading]="isLoading"
+        debounceTime="700" [itemTemplate]="itemTemplateApi" [notFoundTemplate]="notFoundTemplate">
       </ng-autocomplete>
 
       <ng-template #itemTemplateApi let-item>
@@ -93,18 +67,10 @@
     </div>
 
     <div class="ng-autocomplete">
-      <ng-autocomplete #userAuto
-                       [data]="users$ | async"
-                       [searchKeyword]="keyword"
-                       [initialValue]="userInitialValue"
-                       [placeholder]="placeholder"
-                       (inputFocused)='userFocused($event)'
-                       (selected)='selectUser($event)'
-                       (inputChanged)='onUserChange($event)'
-                       (scrolledToEnd)='scrollToEndUsers()'
-                       notFoundText="User not found"
-                       [itemTemplate]="itemTemplateApi"
-                       [notFoundTemplate]="notFoundTemplate">
+      <ng-autocomplete #userAuto [data]="users$ | async" [searchKeyword]="keyword" [initialValue]="userInitialValue"
+        [placeholder]="placeholder" (inputFocused)='userFocused($event)' (selected)='selectUser($event)'
+        (inputChanged)='onUserChange($event)' (scrolledToEnd)='scrollToEndUsers()' notFoundText="User not found"
+        [itemTemplate]="itemTemplateApi" [notFoundTemplate]="notFoundTemplate">
       </ng-autocomplete>
 
       <ng-template #itemTemplateApi let-item>
@@ -127,13 +93,8 @@
     <h4>Static data with custom filter (e.g. case-sensitive)</h4>
 
     <div class="ng-autocomplete">
-      <ng-autocomplete
-        [data]="countries"
-        [searchKeyword]="keyword"
-        [customFilter]="customFilter"
-        [placeholder]="placeholder"
-        [itemTemplate]="itemTemplateStatic"
-        [notFoundTemplate]="notFoundTemplate">
+      <ng-autocomplete [data]="countries" [searchKeyword]="keyword" [customFilter]="customFilter"
+        [placeholder]="placeholder" [itemTemplate]="itemTemplateStatic" [notFoundTemplate]="notFoundTemplate">
       </ng-autocomplete>
 
       <ng-template #itemTemplateStatic let-item>
@@ -150,13 +111,8 @@
     <h4>API data (Disable local filter, you should change the data by re-fetching the data from server)</h4>
 
     <div class="ng-autocomplete">
-      <ng-autocomplete
-        [data]="users$ | async"
-        [searchKeyword]="keyword"
-        [customFilter]="disableFilter"
-        [placeholder]="placeholder"
-        [itemTemplate]="itemTemplateApi"
-        [notFoundTemplate]="notFoundTemplate">
+      <ng-autocomplete [data]="users$ | async" [searchKeyword]="keyword" [customFilter]="disableFilter"
+        [placeholder]="placeholder" [itemTemplate]="itemTemplateApi" [notFoundTemplate]="notFoundTemplate">
       </ng-autocomplete>
 
       <ng-template #itemTemplateApi let-item>

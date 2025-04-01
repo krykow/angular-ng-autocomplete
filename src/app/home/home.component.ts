@@ -1,8 +1,8 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
-import {DataService} from '../services/data.service';
-import {Country} from '../models/countries';
-import {Observable} from 'rxjs';
-import {tap} from 'rxjs/operators';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { DataService } from '../services/data.service';
+import { Country } from '../models/countries';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-home',
@@ -180,6 +180,7 @@ export class HomeComponent implements OnInit {
   }
 
   clearStatic(e): void {
+    debugger;
     console.log('clear');
     e.stopPropagation();
     this.ngAutocompleteStatic.clear();

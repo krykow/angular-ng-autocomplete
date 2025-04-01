@@ -11,13 +11,14 @@ import {
   ViewChild,
   ViewEncapsulation
 } from '@angular/core';
-import {fromEvent, Observable} from 'rxjs';
-import {debounceTime, filter, map} from 'rxjs/operators';
-import {ControlValueAccessor, NG_VALUE_ACCESSOR} from '@angular/forms';
+import { fromEvent, Observable } from 'rxjs';
+import { debounceTime, filter, map } from 'rxjs/operators';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import * as historyUtils from './history-utils';
 
 /**
- * Keyboard events
- */
+* Keyboard events
+*/
 const isArrowUp = keyCode => keyCode === 38;
 const isArrowDown = keyCode => keyCode === 40;
 const isArrowUpDown = keyCode => isArrowUp(keyCode) || isArrowDown(keyCode);
@@ -47,6 +48,7 @@ const isTab = keyCode => keyCode === 9;
 })
 
 export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, ControlValueAccessor {
+  uniqueId: string;
   @ViewChild('searchInput') searchInput: ElementRef; // input element
   @ViewChild('filteredListElement') filteredListElement: ElementRef; // element of items
   @ViewChild('historyListElement') historyListElement: ElementRef; // element of history items
@@ -118,6 +120,8 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
    */
   @Input() public selectedValueRender: (value: any) => string;
 
+  @Input() public selectOnTab: boolean;
+
   // @Output events
   /** Event that is emitted whenever an item from the list is selected. */
   @Output() selected = new EventEmitter<any>();
@@ -164,7 +168,7 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
   }
 
   private defaultWriteValue(value: any) {
-    return value && !this.isTypeString(value) ? value[this.searchKeyword] : value;
+    return value && !historyUtils.isTypeString(value) ? value[this.searchKeyword] : value;
   }
 
   /**
@@ -188,8 +192,11 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
     this.propagateChange(event.target.value);
   }
 
-  constructor(elementRef: ElementRef, private renderer: Renderer2) {
+  constructor(
+    elementRef: ElementRef,
+    private renderer: Renderer2) {
     this.elementRef = elementRef;
+    this.uniqueId = `ng_ac_${Math.random().toString()}`;
   }
 
   /**
@@ -285,13 +292,12 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
     });
   }
 
-
   /**
    * Check if item is a string in the list.
    * @param item
    */
-  isTypeString(item) {
-    return typeof item === 'string';
+  protected isTypeString(item) {
+    return historyUtils.isTypeString(item);
   }
 
   /**
@@ -299,52 +305,14 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
    * @param item
    */
   public select(item) {
-    this.query = !this.isTypeString(item) ? item[this.searchKeyword] : item;
+    this.query = !historyUtils.isTypeString(item) ? item[this.searchKeyword] : item;
     this.isOpen = true;
     this.overlay = false;
     this.selected.emit(item);
     this.propagateChange(item);
 
-    if (this.initialValue) {
-      // check if history already exists in localStorage and then update
-      const history = window.localStorage.getItem(`${this.historyIdentifier}`);
-      if (history) {
-        let existingHistory = JSON.parse(localStorage[`${this.historyIdentifier}`]);
-        if (!(existingHistory instanceof Array)) existingHistory = [];
-
-        // check if selected item exists in existingHistory
-        if (!existingHistory.some((existingItem) => !this.isTypeString(existingItem)
-          ? existingItem[this.searchKeyword] == item[this.searchKeyword] : existingItem == item)) {
-          existingHistory.unshift(item);
-          localStorage.setItem(`${this.historyIdentifier}`, JSON.stringify(existingHistory));
-
-          // check if items don't exceed max allowed number
-          if (existingHistory.length >= this.historyListMaxNumber) {
-            existingHistory.splice(existingHistory.length - 1, 1);
-            localStorage.setItem(`${this.historyIdentifier}`, JSON.stringify(existingHistory));
-          }
-        } else {
-          // if selected item exists in existingHistory swap to top in array
-          if (!this.isTypeString(item)) {
-            // object logic
-            const copiedExistingHistory = existingHistory.slice(); // copy original existingHistory array
-            const selectedIndex = copiedExistingHistory.map((el) => el[this.searchKeyword]).indexOf(item[this.searchKeyword]);
-            copiedExistingHistory.splice(selectedIndex, 1);
-            copiedExistingHistory.splice(0, 0, item);
-            localStorage.setItem(`${this.historyIdentifier}`, JSON.stringify(copiedExistingHistory));
-          } else {
-            // string logic
-            const copiedExistingHistory = existingHistory.slice(); // copy original existingHistory array
-            copiedExistingHistory.splice(copiedExistingHistory.indexOf(item), 1);
-            copiedExistingHistory.splice(0, 0, item);
-            localStorage.setItem(`${this.historyIdentifier}`, JSON.stringify(copiedExistingHistory));
-          }
-        }
-      } else {
-        this.saveHistory(item);
-      }
-    } else {
-      this.saveHistory(item);
+    if (this.historyIdentifier) {
+      historyUtils.saveHistory(this.historyIdentifier, this.historyListMaxNumber, item, this.searchKeyword);
     }
     this.handleClose();
   }
@@ -363,6 +331,12 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
           this.handleOpen();
         }
       }
+
+      if (clickedComponent.attributes && clickedComponent.attributes['input-id']?.value === this.searchInput.nativeElement.id) {
+        inside = true;
+        this.handleFocus(e);
+      }
+
       clickedComponent = clickedComponent.parentNode;
     } while (clickedComponent);
     if (!inside) {
@@ -381,9 +355,11 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
    * Scroll items
    */
   public handleScroll() {
-    this.renderer.listen(this.filteredListElement.nativeElement, 'scroll', () => {
-      this.scrollToEnd();
-    });
+    if (this.filteredListElement) {
+      this.renderer.listen(this.filteredListElement.nativeElement, 'scroll', () => {
+        this.scrollToEnd();
+      });
+    }
   }
 
   /**
@@ -474,11 +450,11 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
   initSearchHistory() {
     this.isHistoryListVisible = false;
     if (this.historyIdentifier && !this.query) {
-      const history = window.localStorage.getItem(`${this.historyIdentifier}`);
-      if (history) {
+      const history = historyUtils.getHistory(this.historyIdentifier);
+      if (history?.length) {
         this.isHistoryListVisible = true;
         this.filteredList = [];
-        this.historyList = history ? JSON.parse(history) : [];
+        this.historyList = history;
       } else {
         this.isHistoryListVisible = false;
       }
@@ -488,6 +464,10 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
   }
 
   handleOpen() {
+    if (this.minQueryLength > this.searchKeyword.length) {
+      return;
+    }
+
     if (this.isOpen || this.isOpen && !this.isLoading) {
       return;
     }
@@ -516,7 +496,10 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
   }
 
   handleFocus(e) {
-    this.searchInput.nativeElement.focus();
+    setTimeout(() => {
+      this.searchInput.nativeElement.focus();
+    }, 250);
+
     if (this.isFocused) {
       return;
     }
@@ -539,7 +522,7 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
       .scrollHeight;
     const elementHeight = this.filteredListElement.nativeElement
       .clientHeight;
-    const atBottom = elementHeight !=0 && Math.abs(scrollHeight - elementHeight - scrollTop) < 1;
+    const atBottom = elementHeight != 0 && Math.abs(scrollHeight - elementHeight - scrollTop) < 1;
 
     if (atBottom) {
       this.scrolledToEnd.emit();
@@ -581,8 +564,8 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
           !isTab(e.keyCode)),
         debounceTime(this.debounceTime)
       ).subscribe(e => {
-      this.onKeyUp(e);
-    });
+        this.onKeyUp(e);
+      });
 
     // cursor up & down
     this.inputKeyDown$.pipe(filter(
@@ -598,9 +581,12 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
     });
 
     // enter keydown
-    this.inputKeyDown$.pipe(filter(e => isEnter(e.keyCode))).subscribe(e => {
-      this.onHandleEnter();
-    });
+    this.inputKeyDown$
+      .pipe(
+        filter(e => isEnter(e.keyCode) || (this.selectOnTab ? isTab(e.keyCode) : false)))
+      .subscribe(e => {
+        this.onHandleSelectItem(e);
+      });
 
     // ESC
     this.inputKeyUp$.pipe(
@@ -742,30 +728,31 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
   }
 
   /**
-   * Select item on enter click
+   * Select item
    */
-  onHandleEnter() {
+  onHandleSelectItem(e) {
     // click enter to choose item from filteredList or historyList
     if (this.selectedIdx > -1) {
       if (!this.historyList.length || !this.isHistoryListVisible) {
         // filteredList
-        this.query = !this.isTypeString(this.filteredList[this.selectedIdx])
+        this.query = !historyUtils.isTypeString(this.filteredList[this.selectedIdx])
           ? this.filteredList[this.selectedIdx][this.searchKeyword]
           : this.filteredList[this.selectedIdx];
 
-        this.saveHistory(this.filteredList[this.selectedIdx]);
+        historyUtils.saveHistory(this.historyIdentifier, this.historyListMaxNumber, this.filteredList[this.selectedIdx], this.searchKeyword);
         this.select(this.filteredList[this.selectedIdx]);
       } else {
         // historyList
-        this.query = !this.isTypeString(this.historyList[this.selectedIdx])
+        this.query = !historyUtils.isTypeString(this.historyList[this.selectedIdx])
           ? this.historyList[this.selectedIdx][this.searchKeyword]
           : this.historyList[this.selectedIdx];
-        this.saveHistory(this.historyList[this.selectedIdx]);
+        historyUtils.saveHistory(this.historyIdentifier, this.historyListMaxNumber, this.historyList[this.selectedIdx], this.searchKeyword);
         this.select(this.historyList[this.selectedIdx]);
       }
     }
     this.isHistoryListVisible = false;
     this.handleClose();
+    this.handleFocus(e);
   }
 
   /**
@@ -791,67 +778,25 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
     this.isOpen = true;
   }
 
-
   /**
-   * Select item to save in localStorage
-   * @param selected
-   */
-  saveHistory(selected) {
-    if (this.historyIdentifier) {
-      // check if selected item exists in historyList
-      if (!this.historyList.some((item) => !this.isTypeString(item)
-        ? item[this.searchKeyword] == selected[this.searchKeyword] : item == selected)) {
-        this.saveHistoryToLocalStorage([selected, ...this.historyList]);
-
-        // check if items don't exceed max allowed number
-        if (this.historyList.length >= this.historyListMaxNumber) {
-          this.historyList.splice(this.historyList.length - 1, 1);
-          this.saveHistoryToLocalStorage([selected, ...this.historyList]);
-        }
-      } else {
-        // if selected item exists in historyList swap to top in array
-        if (!this.isTypeString(selected)) {
-          // object logic
-          const copiedHistoryList = this.historyList.slice(); // copy original historyList array
-          const selectedIndex = copiedHistoryList.map((item) => item[this.searchKeyword]).indexOf(selected[this.searchKeyword]);
-          copiedHistoryList.splice(selectedIndex, 1);
-          copiedHistoryList.splice(0, 0, selected);
-          this.saveHistoryToLocalStorage([...copiedHistoryList]);
-        } else {
-          // string logic
-          const copiedHistoryList = this.historyList.slice(); // copy original historyList array
-          copiedHistoryList.splice(this.historyList.indexOf(selected), 1);
-          copiedHistoryList.splice(0, 0, selected);
-          this.saveHistoryToLocalStorage([...copiedHistoryList]);
-        }
-      }
-    }
+ * Remove item from localStorage
+ * @param index
+ * @param e event
+ */
+  addToHistory(value: string) {
+    historyUtils.saveHistory(this.historyIdentifier, this.historyListMaxNumber, null, value);
   }
 
   /**
-   * Save item in localStorage
-   * @param selected
-   */
-  saveHistoryToLocalStorage(selected) {
-    window.localStorage.setItem(
-      `${this.historyIdentifier}`,
-      JSON.stringify(selected)
-    );
-  }
-
-  /**
-   * Remove item from localStorage
-   * @param index
-   * @param e event
-   */
+ * Remove item from localStorage
+ * @param index
+ * @param e event
+ */
   removeHistoryItem(index, e) {
     e.stopPropagation();
-    this.historyList = this.historyList.filter((v, i) => i !== index);
-    this.saveHistoryToLocalStorage(this.historyList);
-    if (this.historyList.length == 0) {
-      window.localStorage.removeItem(`${this.historyIdentifier}`);
-      this.filterList();
-    }
+
+    this.historyList = historyUtils.removeHistoryItem(this.historyIdentifier, index)
+    this.filterList();
   }
 
   /**
@@ -860,8 +805,8 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
    */
   resetHistoryList(e) {
     e.stopPropagation();
-    this.historyList = [];
-    window.localStorage.removeItem(`${this.historyIdentifier}`);
+
+    this.historyList = historyUtils.resetHistoryList(this.historyIdentifier);
     this.filterList();
   }
 }

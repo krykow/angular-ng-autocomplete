@@ -1,18 +1,9 @@
 <div class="autocomplete-container" aria-owns="suggestions suggestions-history" [attr.aria-expanded]="isOpen"
-     [ngClass]="{ 'active': isOpen}">
+  [ngClass]="{ 'active': isOpen}">
   <div class="input-container">
-    <input #searchInput
-           type="text"
-           attr.aria-label="{{placeholder}}"
-           aria-autocomplete="list"
-           role="combobox"
-           placeholder={{placeholder}}
-           [(ngModel)]=query
-           (input)="onChange($event)"
-           (focus)=handleFocus($event)
-           (blur)=onTouched($event)
-           [disabled]="disabled"
-           autocomplete="off">
+    <input #searchInput type="text" attr.aria-label="{{placeholder}}" aria-autocomplete="list" role="combobox"
+      placeholder={{placeholder}} [(ngModel)]=query (input)="onChange($event)" (focus)=handleFocus($event)
+      (blur)=onTouched($event) [disabled]="disabled" autocomplete="off" [id]="uniqueId">
     <div class="x" *ngIf="query && !isLoading && !disabled" (click)="remove($event)">
       <i class="material-icons" aria-label="Close">close</i>
     </div>
@@ -35,24 +26,22 @@
 
   <!--FilteredList items-->
   <div class="suggestions-container" id="suggestions" role="listbox"
-       [ngClass]="{ 'is-hidden': isHistoryListVisible, 'is-visible': !isHistoryListVisible}">
+    [ngClass]="{ 'is-hidden': isHistoryListVisible, 'is-visible': !isHistoryListVisible}" *ngIf="filteredList.length"
+    [attr.input-id]="uniqueId">
     <!--FilteredList heading-->
-    <div class="heading" *ngIf="filteredList.length > 0 && heading">
+    <div class="heading" *ngIf="heading">
       <div class="text">{{heading}}</div>
     </div>
 
     <ul #filteredListElement>
       <li *ngFor="let item of filteredList; let idx = index" class="item">
         <!--string logic-->
-        <div [class.complete-selected]="idx === selectedIdx" *ngIf='isTypeString(item)'
-             (click)="select(item)">
-          <ng-container
-            *ngTemplateOutlet="itemTemplate;  context: { $implicit: item | highlight: toHighlight }">
+        <div [class.complete-selected]="idx === selectedIdx" *ngIf='isTypeString(item)' (click)="select(item)">
+          <ng-container *ngTemplateOutlet="itemTemplate;  context: { $implicit: item | highlight: toHighlight }">
           </ng-container>
         </div>
         <!--object logic-->
-        <div [class.complete-selected]="idx === selectedIdx" *ngIf='!isTypeString(item)'
-             (click)="select(item)">
+        <div [class.complete-selected]="idx === selectedIdx" *ngIf='!isTypeString(item)' (click)="select(item)">
           <ng-container
             *ngTemplateOutlet="itemTemplate; context: { $implicit: item | highlight: toHighlight : searchKeyword }">
           </ng-container>
@@ -63,7 +52,7 @@
 
   <!--HistoryList items-->
   <div class="suggestions-container" id="suggestions-history" role="listbox"
-       [ngClass]="{ 'is-hidden': !isHistoryListVisible, 'is-visible': isHistoryListVisible}">
+    [ngClass]="{ 'is-hidden': !isHistoryListVisible, 'is-visible': isHistoryListVisible}" [attr.input-id]="uniqueId">
     <!--HistoryList heading-->
     <div class="heading" *ngIf="historyList.length > 0 && historyHeading">
       <div class="text">{{historyHeading}}</div>
@@ -76,14 +65,12 @@
       <li *ngFor="let item of historyList; let idx = index" class="item">
         <!--string logic-->
         <div [class.complete-selected]="idx === selectedIdx" *ngIf='isTypeString(item)' (click)="select(item)">
-          <ng-container
-            *ngTemplateOutlet="itemTemplate;  context: { $implicit: item }">
+          <ng-container *ngTemplateOutlet="itemTemplate;  context: { $implicit: item }">
           </ng-container>
         </div>
         <!--object logic-->
         <div [class.complete-selected]="idx === selectedIdx" *ngIf='!isTypeString(item)' (click)="select(item)">
-          <ng-container
-            *ngTemplateOutlet="itemTemplate; context: { $implicit: item }">
+          <ng-container *ngTemplateOutlet="itemTemplate; context: { $implicit: item }">
           </ng-container>
         </div>
         <div class="x" (click)="removeHistoryItem(idx, $event)">
@@ -95,8 +82,7 @@
 
   <!--Not found-->
   <div class="not-found" *ngIf="isLoading ? !isLoading && notFound : notFound">
-    <ng-container
-      *ngTemplateOutlet="notFoundTemplate;  context: { $implicit: notFoundText  }">
+    <ng-container *ngTemplateOutlet="notFoundTemplate;  context: { $implicit: notFoundText  }">
     </ng-container>
   </div>
 </div>
