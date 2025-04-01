@@ -121,6 +121,7 @@ class TestComponent {
 | minQueryLength | `number` | `1` | no | The minimum number of characters the user must type before a search is performed. |
 | debounceTime | `number` | `_` | no | Delay time while typing. |
 | disabled | `boolean` | `false` | no | HTML `<input>` disable/enable. |
+| selectOnTab | `boolean` | `false` | no | HTML `<input>` Selects item from list when Tab button clicked. |
 
 ### Outputs
 | Output  | Description |

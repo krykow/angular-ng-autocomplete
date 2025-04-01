@@ -265,7 +265,14 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
   public filterList() {
     this.selectedIdx = -1;
     this.initSearchHistory();
-    if (this.query != null && this.data) {
+
+    if (this.minQueryLength > this.query.length) {
+      this.filteredList = [];
+      this.notFound = false;
+      return;
+    }
+
+    if (this.query && this.data) {
       this.toHighlight = this.query;
       this.filteredList = this.customFilter !== undefined ? this.customFilter([...this.data], this.query) : this.defaultFilterFunction();
       // If [focusFirst]="true" automatically focus the first match
@@ -274,6 +281,15 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
       }
     } else {
       this.notFound = false;
+    }
+
+    if (this.filteredList.length === 1) {
+      let matchedValue = !this.isTypeString(this.filteredList[0]) ? this.filteredList[0][this.searchKeyword] : this.filteredList[0];
+
+      if (matchedValue === this.query) {
+        this.filteredList = [];
+        return;
+      }
     }
   }
 
@@ -464,18 +480,20 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
   }
 
   handleOpen() {
-    if (this.minQueryLength > this.searchKeyword.length) {
+    if (!historyUtils.getHistory(this.historyIdentifier).length && this.minQueryLength > this.query.length) {
       return;
     }
 
     if (this.isOpen || this.isOpen && !this.isLoading) {
       return;
     }
+
     // If data exists
     if (this.data && this.data.length) {
+      this.filterList();
+
       this.isOpen = true;
       this.overlay = true;
-      this.filterList();
       this.opened.emit();
     }
   }
@@ -589,12 +607,13 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
       });
 
     // ESC
-    this.inputKeyUp$.pipe(
-      filter(e => isESC(e.keyCode),
-        debounceTime(100))
-    ).subscribe(e => {
-      this.onEsc();
-    });
+    this.inputKeyUp$
+      .pipe(
+        filter(e => isESC(e.keyCode)),
+        debounceTime(100)
+      ).subscribe(e => {
+        this.onEsc();
+      });
 
     // TAB
     this.inputKeyDown$.pipe(
