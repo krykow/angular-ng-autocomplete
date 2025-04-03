@@ -112,7 +112,8 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
   /**
    * Custom filter function
    */
-  @Input() public customFilter: (items: any[], query: string) => any[];
+  @Input() public customFilter: (items: any[], query: string, params: any) => any[];
+  @Input() public customFilterParams: any;
 
   /**
    * Custom result render function
@@ -274,7 +275,7 @@ export class AutocompleteComponent implements OnInit, OnChanges, AfterViewInit, 
 
     if (this.query && this.data) {
       this.toHighlight = this.query;
-      this.filteredList = this.customFilter !== undefined ? this.customFilter([...this.data], this.query) : this.defaultFilterFunction();
+      this.filteredList = this.customFilter !== undefined ? this.customFilter([...this.data], this.query, this.customFilterParams) : this.defaultFilterFunction();
       // If [focusFirst]="true" automatically focus the first match
       if (this.filteredList.length > 0 && this.focusFirst) {
         this.selectedIdx = 0;
